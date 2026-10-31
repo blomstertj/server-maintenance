@@ -19,7 +19,6 @@
 #         ├── volumes.json (contains custom BackupPath for each volume)
 #         └── container2-volume1_backup_2024.06.06_12.00.tar
 #         └── container2-volume2_backup_2024.06.06_12.00.tar
-#
 ## Version
 # 2026.10.31
 #
@@ -31,8 +30,9 @@
 $dockerBackupPathRoot = '/mnt/pool/docker-backups/containers'
 #endregion
 
-#region: Example Directory Tree Post-Backup
-
+#region: Pull Alpine Image
+# pull the latest Alpine image to use for backing up volumes
+docker pull alpine:latest
 #endregion
 
 #region: Get All Container Names
@@ -99,9 +99,13 @@ foreach ($containerName in $containerNames) {
         #region: Volume Backup Execution
         # log the backup operation
         Write-Output ('Backing up {0} volume {1} to {2}/{3}' -f $containerName, $volume.Name, $containerExportPathRoot, $volumeArchiveName)
+        #region: Create Alpine Container for Backing Up Volume
+        Write-Output ('Creating Alpine container for backing up volume {0}' -f $volume.Name)
+        # define the command to backup the volume within the Alpine container
         # tar -czf /path/to/archive.tar -C /path/to/sourceFolder /archive/start/path (. means no leading path component in the archive)
-        # tar -czf /mnt/pool/docker-backups/containers/container/container-volume_backup_YYYY.MM.DD_HH.MM.tar -C /path/to/volume/source/path .
-        tar -czf $volumeArchivePath -C $volume.Source .
+        $alpineBackupBackupCommand = 'tar -czf /backup/{0} -C /target .' -f $volumeArchiveName
+        # run the Alpine container to backup the volume
+        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) alpine:latest sh -c "$alpineBackupBackupCommand"
         #endregion
 
         #region: Volume Backup Configuration Update
