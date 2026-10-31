@@ -1,3 +1,16 @@
+##############################################################################
+#### README
+## Author
+# github.com/blomstertj
+#
+## Description
+# PowerShell script to restore Docker volumes for all containers on a Linux host.
+#
+## Version
+# 2026.10.31
+#
+##############################################################################
+
 #region: Backup Root Path Configuration
 # root path for all backups
 $dockerBackupPathRoot = '/mnt/pool/docker-backups/containers'
