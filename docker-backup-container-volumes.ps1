@@ -1,9 +1,11 @@
-#region: Backup Root Path Configuration
-# root path for all backups
-$dockerBackupPathRoot = '/mnt/pool/docker-backups/containers'
-#endregion
-
-#region: Example Directory Tree Post-Backup
+##############################################################################
+#### README
+## Author
+# github.com/blomstertj
+#
+## Description
+# PowerShell script to backup Docker volumes for all containers on a Linux host.
+# Example directory tree post backup 
 # $dockerBackupPathRoot
 # ├── container1
 # │   ├── container.json
@@ -17,6 +19,19 @@ $dockerBackupPathRoot = '/mnt/pool/docker-backups/containers'
 #         ├── volumes.json (contains custom BackupPath for each volume)
 #         └── container2-volume1_backup_2024.06.06_12.00.tar
 #         └── container2-volume2_backup_2024.06.06_12.00.tar
+## Version
+# 2026.10.31
+#
+# ##############################################################################
+
+
+#region: Backup Root Path Configuration
+# root path for all backups
+$dockerBackupPathRoot = '/mnt/pool/docker-backups/containers'
+#endregion
+
+#region: Example Directory Tree Post-Backup
+
 #endregion
 
 #region: Get All Container Names
@@ -27,7 +42,8 @@ $containerNames = (docker container list --all --format 'json' | ConvertFrom-Jso
 #region: Backup All Container Volumes
 foreach ($containerName in $containerNames) {
     #region: Container Backup Setup
-    Write-Output ('Processing container {0} ==================================================' -f $containerName)
+    Write-Output '================================================='
+    Write-Output ('Processing container {0}' -f $containerName)
     # stop the container before performing the backup
     docker stop $containerName
     # get container config
@@ -68,7 +84,8 @@ foreach ($containerName in $containerNames) {
 
     #region: Container Volumes Backup Execution
     foreach ($volume in $containerMounts) {
-        Write-Output ('Processing volume {0} =========================' -f $volume.Name)
+        Write-Output '========================='
+        Write-Output ('Processing volume {0}' -f $volume.Name)
         #region: Volume Backup Archive Setup
         # define the file name for the volume backup archive
         $volumeArchiveName = '{0}-volume_backup_{1}.tar' -f $volume.Name, (Get-Date -Format 'yyyy.MM.dd')
