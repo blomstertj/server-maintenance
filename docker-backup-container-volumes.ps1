@@ -31,8 +31,8 @@ $dockerBackupPathRoot = '/mnt/pool/docker-backups/containers'
 #endregion
 
 #region: Pull Alpine Image
-# pull the latest Alpine image to use for backing up volumes
-docker pull alpine:latest
+# pull the edge Alpine image to use for backing up volumes
+docker pull alpine:edge
 #endregion
 
 #region: Get All Container Names
