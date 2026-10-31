@@ -121,5 +121,7 @@ foreach ($containerName in $containerNames) {
     # write the container volumes configuration to the JSON file
     $volumeBackupConfigs | ConvertTo-Json -Compress -Depth 10 | Out-File -FilePath $volumeBackupConfigPath
     #endregion
+
+    docker start $containerName
 }
 #endregion
