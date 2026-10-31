@@ -32,7 +32,8 @@ $dockerBackupPathRoot = '/mnt/pool/docker-backups/containers'
 
 #region: Pull Alpine Image
 # pull the edge Alpine image to use for backing up volumes
-docker pull alpine:edge
+$dockerImage = 'alpine:edge'
+docker pull $dockerImage
 #endregion
 
 #region: Get All Container Names
@@ -105,7 +106,7 @@ foreach ($containerName in $containerNames) {
         # tar -czf /path/to/archive.tar -C /path/to/sourceFolder /archive/start/path (. means no leading path component in the archive)
         $alpineBackupBackupCommand = 'tar -czf /backup/{0} -C /target .' -f $volumeArchiveName
         # run the Alpine container to backup the volume
-        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) alpine:latest sh -c "$alpineBackupBackupCommand"
+        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) $dockerImage sh -c "$alpineBackupBackupCommand"
         #endregion
 
         #region: Volume Backup Configuration Update
@@ -122,6 +123,10 @@ foreach ($containerName in $containerNames) {
     $volumeBackupConfigs | ConvertTo-Json -Compress -Depth 10 | Out-File -FilePath $volumeBackupConfigPath
     #endregion
 
+    #region: Restart Container After Backup
+    Write-Output ('Restarting container {0}' -f $containerName)
+    # restart the container after the backup operation
     docker start $containerName
+    #endregion
 }
 #endregion
