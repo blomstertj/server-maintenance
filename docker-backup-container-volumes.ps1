@@ -28,6 +28,9 @@
 #region: Backup Root Path Configuration
 # root path for all backups
 $dockerBackupPathRoot = '/mnt/pool/docker-backups/containers'
+# user and group id for finished backup files
+$backupUserId = 1000
+$backupGroupId = 1000
 #endregion
 
 #region: Pull Alpine Image
@@ -104,7 +107,8 @@ foreach ($containerName in $containerNames) {
         Write-Output ('Creating Alpine container for backing up volume {0}' -f $volume.Name)
         # define the command to backup the volume within the Alpine container
         # tar -czf /path/to/archive.tar -C /path/to/sourceFolder /archive/start/path (. means no leading path component in the archive)
-        $alpineBackupBackupCommand = 'tar -czf /backup/{0} -C /target .' -f $volumeArchiveName
+        # create backup file and set the ownership of the backup file to the specified user and group after creation
+        $alpineBackupBackupCommand = 'tar -czf /backup/{0} -C /target .; chown -R {1}:{2} /backup/{0}' -f $volumeArchiveName, $backupUserId.ToString(), $backupGroupId.ToString()
         # run the Alpine container to backup the volume
         docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) $dockerImage sh -c "$alpineBackupBackupCommand"
         #endregion
