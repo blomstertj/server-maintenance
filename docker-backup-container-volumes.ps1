@@ -5,6 +5,12 @@
 #
 ## Description
 # PowerShell script to backup Docker volumes for all containers on a Linux host.
+#
+# Schedule with crontab:
+# crontab -e
+# Example cron entry to run the script every day at 2:00 AM:
+# 0 2 * * * /usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -File "/path/to/docker-backup-container-volumes.ps1" >> "/path/to/docker-volume-backup.log" 2>&1
+#
 # Example directory tree post backup 
 # $dockerBackupPathRoot
 # ├── container1
@@ -20,14 +26,14 @@
 #         └── container2-volume1_backup_2024.06.06_12.00.tar
 #         └── container2-volume2_backup_2024.06.06_12.00.tar
 ## Version
-# 2026.10.31
+# 2026.11.02
 #
 # ##############################################################################
 
 
 #region: Backup Root Path Configuration
 # root path for all backups
-$dockerBackupPathRoot = '/mnt/pool/docker-backups/containers'
+$dockerBackupPathRoot = '/mnt/pool/samba-shares/shared/backups/docker'
 # user and group id for finished backup files
 $backupUserId = 1000
 $backupGroupId = 1000
@@ -37,11 +43,18 @@ $backupGroupId = 1000
 # pull the edge Alpine image to use for backing up volumes
 $dockerImage = 'alpine:edge'
 docker pull $dockerImage
+$pruneDockerImagePostBackup = $true
 #endregion
 
 #region: Get All Container Names
 # container names to backup
-$containerNames = (docker container list --all --format 'json' | ConvertFrom-Json).Names
+$containerMgmtNames = @(
+    'dockhand'
+    'portainer'
+)
+$containerNames = (docker container list --all --format 'json' | ConvertFrom-Json | Where-Object -Property Name -NotIn $containerMgmtNames).Names
+# add the management containers back to the list of containers to backup
+$containerNames += $containerMgmtNames
 #endregion
 
 #region: Backup All Container Volumes
@@ -97,7 +110,7 @@ foreach ($containerName in $containerNames) {
         # define the full path for the volume backup archive
         $volumeArchivePath = Join-Path -Path $containerVolumeExportPathRoot -ChildPath $volumeArchiveName
         # remove existing backup if it exists
-        if (Test-Path -Path $volumeArchivePath) { Remove-Item -Path $volumeArchivePath }
+        if (Test-Path -Path $volumeArchivePath) { Remove-Item -Path $volumeArchivePath -Force }
         #endregion
 
         #region: Volume Backup Execution
@@ -126,11 +139,22 @@ foreach ($containerName in $containerNames) {
     # write the container volumes configuration to the JSON file
     $volumeBackupConfigs | ConvertTo-Json -Compress -Depth 10 | Out-File -FilePath $volumeBackupConfigPath
     #endregion
+}
+#endregion
 
-    #region: Restart Container After Backup
+#region: Prune Docker Image Post Backup
+if ($pruneDockerImagePostBackup) {
+    Write-Output 'Pruning Docker backup image post backup'
+    docker rmi $dockerImage
+}
+#endregion
+
+#region: Restart Containers Post Backup
+foreach ($containerName in $containers) {
     Write-Output ('Restarting container {0}' -f $containerName)
     # restart the container after the backup operation
     docker start $containerName
-    #endregion
+    Write-Output ('Container {0} restarted. Waiting 60 seconds' -f $containerName)
+    Start-Sleep -Seconds 60
 }
 #endregion
