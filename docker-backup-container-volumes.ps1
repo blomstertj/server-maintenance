@@ -151,8 +151,9 @@ foreach ($containerName in $containerNames) {
         $alpineBackupTarCmdOpts = 'czf'
         $alpineBackupTarCmd = 'tar -{0} /backup/{1} -C /target .' -f $alpineBackupTarCmdOpts, $volumeArchiveName
         $alpineBackupChownTarCmd = 'chown -R {0}:{1} /backup/{2}' -f $backupUserId.ToString(), $backupGroupId.ToString(), $volumeArchiveName
-        # run the Alpine container to backup the volume
-        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) $backupDockerImage sh -c ('{0} && {1}' -f $alpineBackupTarCmd, $alpineBackupChownTarCmd)
+        $alpineBackupCmd = '{0} && {1}' -f $alpineBackupTarCmd, $alpineBackupChownTarCmd
+        # run the container to backup the volume
+        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) $backupDockerImage sh -c $alpineBackupCmd
         #endregion
 
         #region: Volume Backup Configuration Update
