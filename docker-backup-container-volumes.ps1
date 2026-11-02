@@ -143,17 +143,17 @@ foreach ($containerName in $containerNames) {
         #region: Volume Backup Execution
         # log the backup operation
         Write-Output ('Backing up {0} volume {1} to {2}' -f $containerName, $volume.Name, $volumeArchivePath)
-        #region: Create Alpine Container for Backing Up Volume
+        #region: Create Backup Container for Backing Up Volume
         Write-Output ('Running backup container with image {0} for backing up volume {1}' -f $backupDockerImage, $volume.Name)
-        # define the command to backup the volume within the Alpine container
+        # define the command to backup the volume within the backup container
         # tar -czf /path/to/archive.tar -C /path/to/sourceFolder /archive/start/path (. means no leading path component in the archive)
         # create backup file and set the ownership of the backup file to the specified user and group after creation
-        $alpineBackupTarCmdOpts = 'czf'
-        $alpineBackupTarCmd = 'tar -{0} /backup/{1} -C /target .' -f $alpineBackupTarCmdOpts, $volumeArchiveName
-        $alpineBackupChownTarCmd = 'chown -R {0}:{1} /backup/{2}' -f $backupUserId.ToString(), $backupGroupId.ToString(), $volumeArchiveName
-        $alpineBackupCmd = '{0} && {1}' -f $alpineBackupTarCmd, $alpineBackupChownTarCmd
+        $backupContainerBackupTarCmdOpts = 'czf'
+        $backupContainerBackupTarCmd = 'tar -{0} /backup/{1} -C /target .' -f $backupContainerBackupTarCmdOpts, $volumeArchiveName
+        $backupContainerBackupChownTarCmd = 'chown -R {0}:{1} /backup/{2}' -f $backupUserId.ToString(), $backupGroupId.ToString(), $volumeArchiveName
+        $backupContainerBackupCmd = '{0} && {1}' -f $backupContainerBackupTarCmd, $backupContainerBackupChownTarCmd
         # run the container to backup the volume
-        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) $backupDockerImage sh -c $alpineBackupCmd
+        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) $backupDockerImage sh -c $backupContainerBackupCmd
         #endregion
 
         #region: Volume Backup Configuration Update
