@@ -142,7 +142,7 @@ foreach ($containerName in $containerNames) {
 
         #region: Volume Backup Execution
         # log the backup operation
-        Write-Output ('Backing up {0} volume {1} to {2}/{3}' -f $containerName, $volume.Name, $containerExportPathRoot, $volumeArchiveName)
+        Write-Output ('Backing up {0} volume {1} to {2}' -f $containerName, $volume.Name, $volumeArchivePath)
         #region: Create Alpine Container for Backing Up Volume
         Write-Output ('Creating Alpine container for backing up volume {0}' -f $volume.Name)
         # define the command to backup the volume within the Alpine container
