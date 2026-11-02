@@ -144,7 +144,7 @@ foreach ($containerName in $containerNames) {
         # log the backup operation
         Write-Output ('Backing up {0} volume {1} to {2}' -f $containerName, $volume.Name, $volumeArchivePath)
         #region: Create Alpine Container for Backing Up Volume
-        Write-Output ('Creating Alpine container for backing up volume {0}' -f $volume.Name)
+        Write-Output ('Running backup container with image {0} for backing up volume {1}' -f $backupDockerImage, $volume.Name)
         # define the command to backup the volume within the Alpine container
         # tar -czf /path/to/archive.tar -C /path/to/sourceFolder /archive/start/path (. means no leading path component in the archive)
         # create backup file and set the ownership of the backup file to the specified user and group after creation
@@ -161,6 +161,7 @@ foreach ($containerName in $containerNames) {
         $volume | Add-Member -NotePropertyName 'BackupPath' -NotePropertyValue $volumeArchivePath
         # add the updated volume configuration to the volume backup configuration array
         $volumeBackupConfigs += $volume
+        Write-Output ('Backup completed for volume {0} to {1}' -f $volume.Name, $volumeArchivePath)
         #endregion
     }
     #endregion
