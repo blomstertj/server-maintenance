@@ -37,6 +37,7 @@ $dockerBackupPathRoot = '/mnt/pool/samba-shares/shared/backups/docker'
 # user and group id for finished backup files
 $backupUserId = 1000
 $backupGroupId = 1000
+$containerRestartInterval = 60
 #endregion
 
 #region: Pull Alpine Image
@@ -48,13 +49,14 @@ $pruneDockerImagePostBackup = $true
 
 #region: Get All Container Names
 # container names to backup
+$containerList = docker container list --all --format 'json' | ConvertFrom-Json
 $containerMgmtNames = @(
     'dockhand'
     'portainer'
 )
-$containerNames = (docker container list --all --format 'json' | ConvertFrom-Json | Where-Object -Property Name -NotIn $containerMgmtNames).Names
+$containerNames = ($containerList | Where-Object -Property Name -NotIn $containerMgmtNames).Names
 # add the management containers back to the list of containers to backup
-$containerNames += $containerMgmtNames
+$containerNames += ($containerList | Where-Object -Property Name -In $containerMgmtNames).Names
 #endregion
 
 #region: Backup All Container Volumes
@@ -150,11 +152,11 @@ if ($pruneDockerImagePostBackup) {
 #endregion
 
 #region: Restart Containers Post Backup
-foreach ($containerName in $containers) {
+foreach ($containerName in $containerNames) {
     Write-Output ('Restarting container {0}' -f $containerName)
     # restart the container after the backup operation
     docker start $containerName
-    Write-Output ('Container {0} restarted. Waiting 60 seconds' -f $containerName)
-    Start-Sleep -Seconds 60
+    Write-Output ('Container {0} restarted. Waiting {1} seconds' -f $containerName, $containerRestartInterval)
+    Start-Sleep -Seconds $containerRestartInterval
 }
 #endregion
