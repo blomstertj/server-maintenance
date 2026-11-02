@@ -31,32 +31,57 @@
 # ##############################################################################
 
 
-#region: Backup Root Path Configuration
+#region: User Configuration
 # root path for all backups
 $dockerBackupPathRoot = '/mnt/pool/samba-shares/shared/backups/docker'
+# image to use for backing up volumes
+$backupDockerImage = 'alpine:edge'
+# prune the backup image after the backup process is complete
+$backupDockerImageAutoPrune = $true
 # user and group id for finished backup files
 $backupUserId = 1000
 $backupGroupId = 1000
+# interval in seconds to wait between restarting containers after backup
 $containerRestartInterval = 60
+# list of containers that manage Docker itself
+# these containers are backed at the end of the backup process and
+# are started first after the backup process
+$containerMgmtMasterList = @('dockhand', 'portainer')
 #endregion
 
-#region: Pull Alpine Image
-# pull the edge Alpine image to use for backing up volumes
-$dockerImage = 'alpine:edge'
-docker pull $dockerImage
-$pruneDockerImagePostBackup = $true
+
+#region: Output User Configuration
+Write-Output 'Docker Backup Path Root:'
+Write-Output $dockerBackupPathRoot
+Write-Output 'Backup Docker Image:'
+Write-Output $backupDockerImage
+Write-Output 'Container Restart Interval:'
+Write-Output $containerRestartInterval
+Write-Output 'Backup Docker Image Auto Prune:'
+Write-Output $backupDockerImageAutoPrune
+Write-Output 'Backup Archive User ID:'
+Write-Output $backupUserId
+Write-Output 'Backup Archive Group ID:'
+Write-Output $backupGroupId
+Write-Output 'Container Management Master List:'
+Write-Output $containerMgmtMasterList
+#endregion
+
+
+#region: Pull backup Image
+# pull the specified backup image to use for backing up volumes
+Write-Output '================================================='
+Write-Output ('Pulling {0} image for Docker volume backup' -f $backupDockerImage)
+docker pull $backupDockerImage
 #endregion
 
 #region: Get All Container Names
 # container names to backup
 $containerList = docker container list --all --format 'json' | ConvertFrom-Json
-$containerMgmtNames = @(
-    'dockhand'
-    'portainer'
-)
-$containerNames = ($containerList | Where-Object -Property Name -NotIn $containerMgmtNames).Names
+$containerMgmtNames = ($containerList | Where-Object -Property Name -In $containerMgmtMasterList).Names
+$containerNonMgmtNames = ($containerList | Where-Object -Property Name -NotIn $containerMgmtMasterList).Names
 # add the management containers back to the list of containers to backup
-$containerNames += ($containerList | Where-Object -Property Name -In $containerMgmtNames).Names
+$containerNames = $containerNonMgmtNames + $containerMgmtNames
 #endregion
 
 #region: Backup All Container Volumes
@@ -123,9 +148,11 @@ foreach ($containerName in $containerNames) {
         # define the command to backup the volume within the Alpine container
         # tar -czf /path/to/archive.tar -C /path/to/sourceFolder /archive/start/path (. means no leading path component in the archive)
         # create backup file and set the ownership of the backup file to the specified user and group after creation
-        $alpineBackupBackupCommand = 'tar -czf /backup/{0} -C /target .; chown -R {1}:{2} /backup/{0}' -f $volumeArchiveName, $backupUserId.ToString(), $backupGroupId.ToString()
+        $alpineBackupTarCmdOpts = 'czf'
+        $alpineBackupTarCmd = 'tar -{0} /backup/{1} -C /target .' -f $alpineBackupTarCmdOpts, $volumeArchiveName
+        $alpineBackupChownTarCmd = 'chown -R {0}:{1} /backup/{2}' -f $backupUserId.ToString(), $backupGroupId.ToString(), $volumeArchiveName
         # run the Alpine container to backup the volume
-        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) $dockerImage sh -c "$alpineBackupBackupCommand"
+        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) $backupDockerImage sh -c ('{0} && {1}' -f $alpineBackupTarCmd, $alpineBackupChownTarCmd)
         #endregion
 
         #region: Volume Backup Configuration Update
@@ -145,14 +172,27 @@ foreach ($containerName in $containerNames) {
 #endregion
 
 #region: Prune Docker Image Post Backup
-if ($pruneDockerImagePostBackup) {
+if ($backupDockerImageAutoPrune) {
+    Write-Output '================================================='
     Write-Output 'Pruning Docker backup image post backup'
-    docker rmi $dockerImage
+    docker rmi $backupDockerImage
 }
 #endregion
 
-#region: Restart Containers Post Backup
-foreach ($containerName in $containerNames) {
+#region: Restart Management Containers Post Backup
+foreach ($containerName in $containerMgmtNames) {
+    Write-Output '================================================='
+    Write-Output ('Restarting container {0}' -f $containerName)
+    # restart the container after the backup operation
+    docker start $containerName
+    Write-Output ('Container {0} restarted. Waiting {1} seconds' -f $containerName, $containerRestartInterval)
+    Start-Sleep -Seconds $containerRestartInterval
+}
+#endregion
+
+#region: Restart Non-Management Containers Post Backup
+foreach ($containerName in $containerNonMgmtNames) {
+    Write-Output '================================================='
     Write-Output ('Restarting container {0}' -f $containerName)
     # restart the container after the backup operation
     docker start $containerName
