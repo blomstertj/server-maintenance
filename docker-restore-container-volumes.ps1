@@ -20,8 +20,9 @@ $containerBackupPaths = Get-ChildItem -Path $dockerBackupPathRoot -Directory
 #endregion
 
 #region: Pull Alpine Image
-# pull the latest Alpine image to use for restoring volumes
-docker pull alpine:latest
+# pull the edge Alpine image to use for backing up volumes
+$dockerImage = 'alpine:edge'
+docker pull $dockerImage
 #endregion
 
 #region: Restore Volumes for Each Container
@@ -57,7 +58,7 @@ foreach ($containerBackupPath in $containerBackupPaths) {
         # define the command to restore the volume within the Alpine container
         $alpineBackupRestoreCommand = 'rm -rf /target/* && tar -xzf /backup/{0} -C /target' -f ($volume.BackupPath | Split-Path -Leaf)
         # run the Alpine container to restore the volume
-        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $volumeBackupRootPath) alpine:latest sh -c "$alpineBackupRestoreCommand"
+        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $volumeBackupRootPath) $dockerImage sh -c "$alpineBackupRestoreCommand"
         #endregion
     }
     #endregion
