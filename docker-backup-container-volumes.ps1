@@ -78,8 +78,8 @@ docker pull $backupDockerImage
 #region: Get All Container Names
 # container names to backup
 $containerList = docker container list --all --format 'json' | ConvertFrom-Json
-$containerMgmtNames = ($containerList | Where-Object -Property Name -In $containerMgmtMasterList).Names
-$containerNonMgmtNames = ($containerList | Where-Object -Property Name -NotIn $containerMgmtMasterList).Names
+$containerMgmtNames = ($containerList | Where-Object -Property Names -In $containerMgmtMasterList).Names
+$containerNonMgmtNames = ($containerList | Where-Object -Property Names -NotIn $containerMgmtMasterList).Names
 # add the management containers back to the list of containers to backup
 $containerNames = $containerNonMgmtNames + $containerMgmtNames
 #endregion
