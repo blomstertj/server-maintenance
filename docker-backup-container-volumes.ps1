@@ -44,7 +44,7 @@ $backupGroupId = 1000
 # interval in seconds to wait between restarting containers after backup
 $containerRestartInterval = 60
 # list of containers that manage Docker itself
-# these containers are backed at the end of the backup process and
+# these containers are backed up at the end of the backup process and
 # are started first after the backup process
 $containerMgmtMasterList = @('dockhand', 'portainer')
 #endregion
@@ -92,9 +92,7 @@ foreach ($containerName in $containerNames) {
     # stop the container before performing the backup
     docker stop $containerName
     # get container config
-    $container = docker inspect --format 'json' $containerName | ConvertFrom-Json
-    # remove the leading slash from the container name for use in the file path
-    $containerName = $container.Name.Replace('/', '')
+    $container = docker inspect $containerName --format 'json' | ConvertFrom-Json
     # container backup root path
     $containerExportPathRoot = Join-Path -Path $dockerBackupPathRoot -ChildPath $containerName
     #endregion
@@ -176,7 +174,7 @@ foreach ($containerName in $containerNames) {
 #region: Prune Docker Image Post Backup
 if ($backupDockerImageAutoPrune) {
     Write-Output '================================================='
-    Write-Output 'Pruning Docker backup image post backup'
+    Write-Output ('Pruning Docker backup image {0} post backup' -f $backupDockerImage)
     docker rmi $backupDockerImage
 }
 #endregion
