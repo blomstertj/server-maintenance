@@ -58,7 +58,7 @@ foreach ($containerBackupPath in $containerBackupPaths) {
         # define the command to restore the volume within the Alpine container
         $alpineBackupRestoreCommand = 'rm -rf /target/* && tar -xzf /backup/{0} -C /target' -f ($volume.BackupPath | Split-Path -Leaf)
         # run the Alpine container to restore the volume
-        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $volumeBackupRootPath) $dockerImage sh -c "$alpineBackupRestoreCommand"
+        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup:ro' -f $volumeBackupRootPath) $dockerImage sh -c "$alpineBackupRestoreCommand"
         #endregion
     }
     #endregion
