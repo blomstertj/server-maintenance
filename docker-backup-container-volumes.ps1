@@ -51,22 +51,14 @@ $containerMgmtMasterList = @('dockhand', 'portainer')
 
 
 #region: Output User Configuration
-Write-Output 'Docker Backup Path Root:'
-Write-Output $dockerBackupPathRoot
-Write-Output 'Backup Docker Image:'
-Write-Output $backupDockerImage
-Write-Output 'Container Restart Interval:'
-Write-Output $containerRestartInterval
-Write-Output 'Backup Docker Image Auto Prune:'
-Write-Output $backupDockerImageAutoPrune
-Write-Output 'Backup Archive User ID:'
-Write-Output $backupUserId
-Write-Output 'Backup Archive Group ID:'
-Write-Output $backupGroupId
-Write-Output 'Container Management Master List:'
-Write-Output $containerMgmtMasterList
+Write-Output ('Docker Backup Path Root: {0}' -f $dockerBackupPathRoot)
+Write-Output ('Backup Docker Image: {0}' -f $backupDockerImage)
+Write-Output ('Container Restart Interval: {0}' -f $containerRestartInterval.ToString())
+Write-Output ('Backup Docker Image Auto Prune: {0}' -f $backupDockerImageAutoPrune.ToString())
+Write-Output ('Backup Archive User ID: {0}' -f $backupUserId.ToString())
+Write-Output ('Backup Archive Group ID: {0}' -f $backupGroupId.ToString())
+Write-Output ('Container Management Master List: {0}' -f ($containerMgmtMasterList -join ', '))
 #endregion
-
 
 #region: Pull backup Image
 # pull the specified backup image to use for backing up volumes
@@ -77,11 +69,13 @@ docker pull $backupDockerImage
 
 #region: Get All Container Names
 # container names to backup
+Write-Output '================================================='
 $containerList = docker container list --all --format 'json' | ConvertFrom-Json
 $containerMgmtNames = ($containerList | Where-Object -Property Names -In $containerMgmtMasterList).Names
 $containerNonMgmtNames = ($containerList | Where-Object -Property Names -NotIn $containerMgmtMasterList).Names
 # add the management containers back to the list of containers to backup
 $containerNames = $containerNonMgmtNames + $containerMgmtNames
+Write-Output ('Containers to backup: {0}' -f ($containerNames -join ', '))
 #endregion
 
 #region: Backup All Container Volumes
