@@ -51,6 +51,7 @@ $containerMgmtMasterList = @('dockhand', 'portainer')
 
 
 #region: Output User Configuration
+Write-Output '================================================='
 Write-Output ('Docker Backup Path Root: {0}' -f $dockerBackupPathRoot)
 Write-Output ('Backup Docker Image: {0}' -f $backupDockerImage)
 Write-Output ('Container Restart Interval: {0}' -f $containerRestartInterval.ToString())
