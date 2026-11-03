@@ -91,6 +91,7 @@ foreach ($containerName in $containerNames) {
     Write-Output ('Processing container {0}' -f $containerName)
     # stop the container before performing the backup
     docker stop $containerName
+    docker wait $containerName
     # get container config
     $container = docker inspect $containerName --format 'json' | ConvertFrom-Json
     # container backup root path
@@ -151,7 +152,7 @@ foreach ($containerName in $containerNames) {
         $backupContainerBackupChownTarCmd = 'chown -R {0}:{1} /backup/{2}' -f $backupUserId.ToString(), $backupGroupId.ToString(), $volumeArchiveName
         $backupContainerBackupCmd = '{0} && {1}' -f $backupContainerBackupTarCmd, $backupContainerBackupChownTarCmd
         # run the container to backup the volume
-        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) $backupDockerImage sh -c $backupContainerBackupCmd
+        docker run --rm -v ('{0}:/target:ro' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) $backupDockerImage sh -c $backupContainerBackupCmd
         #endregion
 
         #region: Volume Backup Configuration Update
