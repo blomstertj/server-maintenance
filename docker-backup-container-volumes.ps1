@@ -26,7 +26,7 @@
 #         └── container2-volume1_backup_2024.06.06_12.00.tar
 #         └── container2-volume2_backup_2024.06.06_12.00.tar
 ## Version
-# 2026.11.02
+# 2026.11.08
 #
 # ##############################################################################
 
@@ -147,7 +147,7 @@ foreach ($containerName in $containerNames) {
         $backupContainerBackupChownTarCmd = 'chown -R {0}:{1} /backup/{2}' -f $backupUserId.ToString(), $backupGroupId.ToString(), $volumeArchiveName
         $backupContainerBackupCmd = '{0} && {1}' -f $backupContainerBackupTarCmd, $backupContainerBackupChownTarCmd
         # run the container to backup the volume
-        docker run --rm -v ('{0}:/target:ro' -f $volume.Name) -v ('{0}:/backup' -f $containerVolumeExportPathRoot) $backupDockerImage sh -c $backupContainerBackupCmd
+        docker run --rm -v ('{0}:/target:ro' -f $volume.Name) -v ('{0}:/backup:z' -f $containerVolumeExportPathRoot) $backupDockerImage sh -c $backupContainerBackupCmd
         #endregion
 
         #region: Volume Backup Configuration Update

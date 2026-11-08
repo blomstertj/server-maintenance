@@ -7,22 +7,25 @@
 # PowerShell script to restore Docker volumes for all containers on a Linux host.
 #
 ## Version
-# 2026.10.31
+# 2026.11.08
 #
 ##############################################################################
 
 
-#region: Backup Root Path Configuration
+#region: User Configuration
 # root path for all backups
-$dockerBackupPathRoot = '/mnt/pool/docker-backups/containers'
+$dockerBackupPathRoot = '/mnt/pool/samba-shares/shared/backups/docker'
+# image to use for backing up volumes
+$restoreDockerImage = 'alpine:edge'
+# prune the restore image after the restore process is complete
+$restoreDockerImageAutoPrune = $true
 # get all container backup paths
 $containerBackupPaths = Get-ChildItem -Path $dockerBackupPathRoot -Directory
 #endregion
 
 #region: Pull Alpine Image
 # pull the edge Alpine image to use for backing up volumes
-$dockerImage = 'alpine:edge'
-docker pull $dockerImage
+docker pull $restoreDockerImage
 #endregion
 
 #region: Restore Volumes for Each Container
@@ -58,9 +61,17 @@ foreach ($containerBackupPath in $containerBackupPaths) {
         # define the command to restore the volume within the Alpine container
         $alpineBackupRestoreCommand = 'rm -rf /target/* && tar -xzf /backup/{0} -C /target' -f ($volume.BackupPath | Split-Path -Leaf)
         # run the Alpine container to restore the volume
-        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup:ro' -f $volumeBackupRootPath) $dockerImage sh -c "$alpineBackupRestoreCommand"
+        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup:z,ro' -f $volumeBackupRootPath) $restoreDockerImage sh -c "$alpineBackupRestoreCommand"
         #endregion
     }
     #endregion
+}
+#endregion
+
+#region: Prune Docker Image Post Restore
+if ($restoreDockerImageAutoPrune) {
+    Write-Output '================================================='
+    Write-Output ('Pruning Docker restore image {0} post restore' -f $restoreDockerImage)
+    docker rmi $restoreDockerImage
 }
 #endregion
