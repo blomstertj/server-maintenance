@@ -15,7 +15,7 @@
 #region: User Configuration
 # root path for all backups
 $dockerBackupPathRoot = '/mnt/pool/samba-shares/shared/backups/docker'
-# image to use for backing up volumes
+# image to use for restoring volumes
 $restoreDockerImage = 'alpine:edge'
 # prune the restore image after the restore process is complete
 $restoreDockerImageAutoPrune = $true
@@ -23,8 +23,8 @@ $restoreDockerImageAutoPrune = $true
 $containerBackupPaths = Get-ChildItem -Path $dockerBackupPathRoot -Directory
 #endregion
 
-#region: Pull Alpine Image
-# pull the edge Alpine image to use for backing up volumes
+#region: Pull Restore Image
+# pull the restore image to use for restoring volumes
 docker pull $restoreDockerImage
 #endregion
 
@@ -53,15 +53,15 @@ foreach ($containerBackupPath in $containerBackupPaths) {
         # create the Docker volume if it doesn't exist
         $dockerVolumeCreate = docker volume create $volume.Name
         Write-Output ('Created Docker volume {0}' -f $dockerVolumeCreate)
-        # log the creation of the Alpine container for restoring the volume
+        # log the creation of the restore container for restoring the volume
         #endregion
 
-        #region: Create Alpine Container for Restoring Volume
-        Write-Output ('Creating Alpine container for restoring volume {0}' -f $volume.Name)
-        # define the command to restore the volume within the Alpine container
-        $alpineBackupRestoreCommand = 'rm -rf /target/* && tar -xzf /backup/{0} -C /target' -f ($volume.BackupPath | Split-Path -Leaf)
-        # run the Alpine container to restore the volume
-        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup:z,ro' -f $volumeBackupRootPath) $restoreDockerImage sh -c "$alpineBackupRestoreCommand"
+        #region: Create Restore Container for Restoring Volume
+        Write-Output ('Creating restore container for restoring volume {0}' -f $volume.Name)
+        # define the command to restore the volume within the restore container
+        $restoreCommand = 'rm -rf /target/* && tar -xzf /backup/{0} -C /target' -f ($volume.BackupPath | Split-Path -Leaf)
+        # run the restore container to restore the volume
+        docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup:z,ro' -f $volumeBackupRootPath) $restoreDockerImage sh -c "$restoreCommand"
         #endregion
     }
     #endregion
