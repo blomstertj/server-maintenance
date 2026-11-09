@@ -152,7 +152,7 @@ foreach ($containerName in $containerNames) {
 
         #region: Volume Backup Configuration Update
         # add the volume archive path to the JSON configuration
-        $volume | Add-Member -NotePropertyName 'BackupPath' -NotePropertyValue $volumeArchivePath
+        $volume | Add-Member -NotePropertyName 'LatestBackupPath' -NotePropertyValue $volumeArchivePath
         # add the updated volume configuration to the volume backup configuration array
         $volumeBackupConfigs += $volume
         Write-Output ('Backup completed for volume {0} to {1}' -f $volume.Name, $volumeArchivePath)
