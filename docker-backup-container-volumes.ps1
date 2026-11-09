@@ -41,6 +41,9 @@ $backupDockerImageAutoPrune = $true
 # user and group id for finished backup files
 $backupUserId = 1000
 $backupGroupId = 1000
+# optional container restarts after backup
+# set to $true to restart containers after the backup process
+$containerRestartAfterBackup = $true
 # interval in seconds to wait between restarting containers after backup
 $containerRestartInterval = 60
 # list of containers that manage Docker itself
@@ -54,6 +57,7 @@ $containerMgmtMasterList = @('dockhand', 'portainer')
 Write-Output '================================================='
 Write-Output ('Docker Backup Path Root: {0}' -f $dockerBackupPathRoot)
 Write-Output ('Backup Docker Image: {0}' -f $backupDockerImage)
+Write-Output ('Container Restart After Backup: {0}' -f $containerRestartAfterBackup.ToString())
 Write-Output ('Container Restart Interval: {0}' -f $containerRestartInterval.ToString())
 Write-Output ('Backup Docker Image Auto Prune: {0}' -f $backupDockerImageAutoPrune.ToString())
 Write-Output ('Backup Archive User ID: {0}' -f $backupUserId.ToString())
@@ -175,24 +179,28 @@ if ($backupDockerImageAutoPrune) {
 }
 #endregion
 
-#region: Restart Management Containers Post Backup
-foreach ($containerName in $containerMgmtNames) {
-    Write-Output '================================================='
-    Write-Output ('Restarting container {0}' -f $containerName)
-    # restart the container after the backup operation
-    docker start $containerName
-    Write-Output ('Container {0} restarted. Waiting {1} seconds' -f $containerName, $containerRestartInterval)
-    Start-Sleep -Seconds $containerRestartInterval
-}
-#endregion
+#region: Restart Containers Post Backup
+if ($containerRestartAfterBackup) {
+    #region: Restart Management Containers Post Backup
+    foreach ($containerName in $containerMgmtNames) {
+        Write-Output '================================================='
+        Write-Output ('Restarting container {0}' -f $containerName)
+        # restart the container after the backup operation
+        docker start $containerName
+        Write-Output ('Container {0} restarted. Waiting {1} seconds' -f $containerName, $containerRestartInterval)
+        Start-Sleep -Seconds $containerRestartInterval
+    }
+    #endregion
 
-#region: Restart Non-Management Containers Post Backup
-foreach ($containerName in $containerNonMgmtNames) {
-    Write-Output '================================================='
-    Write-Output ('Restarting container {0}' -f $containerName)
-    # restart the container after the backup operation
-    docker start $containerName
-    Write-Output ('Container {0} restarted. Waiting {1} seconds' -f $containerName, $containerRestartInterval)
-    Start-Sleep -Seconds $containerRestartInterval
+    #region: Restart Non-Management Containers Post Backup
+    foreach ($containerName in $containerNonMgmtNames) {
+        Write-Output '================================================='
+        Write-Output ('Restarting container {0}' -f $containerName)
+        # restart the container after the backup operation
+        docker start $containerName
+        Write-Output ('Container {0} restarted. Waiting {1} seconds' -f $containerName, $containerRestartInterval)
+        Start-Sleep -Seconds $containerRestartInterval
+    }
+    #endregion
 }
 #endregion
