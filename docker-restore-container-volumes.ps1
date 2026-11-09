@@ -59,7 +59,10 @@ foreach ($containerBackupPath in $containerBackupPaths) {
         #region: Create Restore Container for Restoring Volume
         Write-Output ('Creating restore container for restoring volume {0}' -f $volume.Name)
         # define the command to restore the volume within the restore container
-        $restoreCommand = 'rm -rf /target/* && tar -xzf /backup/{0} -C /target' -f ($volume.BackupPath | Split-Path -Leaf)
+        $restoreContainerRestoreTarCmdOpts = 'xzf'
+        $restoreContainerRestoreTarCmd = 'tar -{0} /backup/{1} -C /target' -f $restoreContainerRestoreTarCmdOpts, ($volume.BackupPath | Split-Path -Leaf)
+        $restoreContainerClearTargetCmd = 'rm -rf /target/*'
+        $restoreCommand = '{0} && {1}' -f $restoreContainerClearTargetCmd, $restoreContainerRestoreTarCmd
         # run the restore container to restore the volume
         docker run --rm -v ('{0}:/target' -f $volume.Name) -v ('{0}:/backup:z,ro' -f $volumeBackupRootPath) $restoreDockerImage sh -c "$restoreCommand"
         #endregion
