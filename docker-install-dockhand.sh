@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# disable SELinux labeling
+# disable SELinux
 # reserve 256 MB of memory
-# enable SELinux labeling for mounted socket
+# enable SELinux labeling for mounted socket just in case
 
 docker run -d \
   --security-opt label=disable \
