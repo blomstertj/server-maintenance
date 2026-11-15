@@ -2,6 +2,7 @@
 
 pwsh docker-backup-container-volumes.ps1
 systemctl stop docker
+systemctl stop containerd
 sudo journalctl --vacuum-time=1d
 zypper refresh
 zypper dup
